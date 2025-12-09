@@ -1,8 +1,8 @@
-name: "KNX Sentinel V2"
+name: "KNX Sentinel 2"
 version: "0.1.0"
-slug: "knx_sentinel_v2"
-description: "Advanced KNX Bus Monitor and Analysis Tool"
-url: "https://github.com/yourusername/KNX-Sentinel-V2"
+slug: "knx_sentinel_2"
+description: "KNX Sentinel 2 - Developed by Manara Engineering"
+url: "https://www.manara.co.in"
 startup: application
 arch:
   - aarch64
