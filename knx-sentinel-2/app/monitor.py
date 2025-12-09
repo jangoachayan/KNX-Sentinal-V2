@@ -24,8 +24,12 @@ class BusMonitor:
             return
         
         # Register callback for all telegrams
-        xknx.telegram_queue.register_telegram_received_cb(self.process_telegram)
+        xknx.telegram_queue.register_telegram_received_cb(self._telegram_received_cb)
         logger.info("Bus Monitor started and listening for telegrams.")
+
+    def _telegram_received_cb(self, telegram: Telegram):
+        """Synchronous callback wrapper for XKNX."""
+        asyncio.create_task(self.process_telegram(telegram))
 
     async def process_telegram(self, telegram: Telegram):
         """Callback when a telegram is received."""
