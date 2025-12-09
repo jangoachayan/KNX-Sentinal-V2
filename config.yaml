@@ -1,0 +1,17 @@
+name: "KNX Sentinel V2"
+version: "0.1.0"
+slug: "knx_sentinel_v2"
+description: "Advanced KNX Bus Monitor and Analysis Tool"
+url: "https://github.com/yourusername/KNX-Sentinel-V2"
+startup: application
+arch:
+  - aarch64
+  - amd64
+  - armv7
+options:
+  log_level: "info"
+schema:
+  log_level: "str"
+ports:
+  8000/tcp: 8000
+full_access: true
