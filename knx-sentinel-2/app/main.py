@@ -10,7 +10,7 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("knx-sentinel")
 
-app = FastAPI(title="KNX Sentinel 2", version="0.1.5")
+app = FastAPI(title="KNX Sentinel 2", version="1.0.6")
 
 # Managers
 connection_manager = KNXConnectionManager()
