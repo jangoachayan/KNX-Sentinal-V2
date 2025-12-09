@@ -1,5 +1,5 @@
 name: "KNX Sentinel 2"
-version: "0.1.0"
+version: "0.1.1"
 slug: "knx_sentinel_2"
 description: "KNX Sentinel 2 - Developed by Manara Engineering"
 url: "https://www.manara.co.in"
