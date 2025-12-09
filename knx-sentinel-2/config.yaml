@@ -11,8 +11,14 @@ arch:
   - armv7
 options:
   log_level: "info"
+  knx_host: ""
+  knx_port: 3671
+  knx_type: "AUTOMATIC"
 schema:
   log_level: "str"
+  knx_host: "str"
+  knx_port: "int"
+  knx_type: "list(AUTOMATIC|TUNNELING|ROUTING)"
 ports:
   8000/tcp: 8000
 full_access: true

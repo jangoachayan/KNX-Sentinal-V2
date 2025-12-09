@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import os
 from xknx import XKNX
 from xknx.io import ConnectionConfig, ConnectionType
 
@@ -23,12 +24,37 @@ class KNXConnectionManager:
 
         logger.info("Initializing XKNX connection...")
         try:
-            # In a real add-on, we would parse config options here.
-            # For now, we rely on xknx auto-discovery or default config.
-            # If a knx.yaml exists in /config, xknx might pick it up if configured.
-            # Ideally, we construct ConnectionConfig from Add-on options.
+            # Parse configuration from environment variables
+            knx_host = os.getenv("KNX_HOST")
+            knx_port = int(os.getenv("KNX_PORT", 3671))
+            knx_type_str = os.getenv("KNX_TYPE", "AUTOMATIC").upper()
+
+            connection_config = None
+            if knx_host:
+                logger.info(f"Manual KNX config detected: Host={knx_host}, Port={knx_port}, Type={knx_type_str}")
+                
+                # Determine connection type
+                conn_type = ConnectionType.TUNNELING
+                if knx_type_str == "ROUTING":
+                    conn_type = ConnectionType.ROUTING
+                elif knx_type_str == "AUTOMATIC":
+                     # If host is provided but type is auto, default to tunneling as it's most common for specific IP
+                     conn_type = ConnectionType.TUNNELING
+
+                connection_config = ConnectionConfig(
+                    gateway_ip=knx_host,
+                    gateway_port=knx_port,
+                    connection_type=conn_type
+                )
+            else:
+                 logger.info("No manual host configured. Using Auto-Discovery.")
+
+            # Initialize XKNX with or without specific config
+            if connection_config:
+                self.xknx = XKNX(connection_config=connection_config)
+            else:
+                self.xknx = XKNX()
             
-            self.xknx = XKNX()
             await self.xknx.start()
             self.connected = True
             logger.info("XKNX connected successfully.")
