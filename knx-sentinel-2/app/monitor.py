@@ -37,6 +37,9 @@ class BusMonitor:
             processed_data = self._parse_telegram(telegram)
             self.history.appendleft(processed_data)
             
+            # Log telegram for verification
+            logger.info(f"Telegram received: {processed_data['direction']} | {processed_data['source']} -> {processed_data['destination']} | {processed_data['type']} | {processed_data['payload']}")
+
             # Broadcast to real-time subscribers (WebSockets)
             for queue in list(self.subscribers):
                 await queue.put(processed_data)
