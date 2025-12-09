@@ -15,7 +15,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages
 
 # Copy data for add-on
 COPY run.sh /
-COPY app /app
+COPY app /app/app
 
 RUN chmod a+x /run.sh
 

@@ -6,4 +6,4 @@ echo "Starting KNX Sentinel V2..."
 # LOG_LEVEL=$(bashio::config 'log_level')
 
 # Start the FastAPI application
-exec uvicorn main:app --host 0.0.0.0 --port 8000
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000
