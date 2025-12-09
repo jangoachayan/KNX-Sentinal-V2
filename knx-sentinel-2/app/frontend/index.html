@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KNX Sentinel 2 - Bus Monitor</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-color: #03dac6;
+            --secondary-bg: #2d2d2d;
+            --border-color: #3d3d3d;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        #status-bar {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: var(--secondary-bg);
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .connected { background-color: #4caf50; }
+        .disconnected { background-color: #f44336; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--secondary-bg);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .payload {
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #ffccbc;
+        }
+
+        .direction-in { color: #81c784; }
+        .direction-out { color: #64b5f6; }
+
+        #log-container {
+            height: calc(100vh - 150px);
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="status-bar">
+        <span><span id="ws-status" class="status-indicator disconnected"></span> Live Connection</span>
+        <span style="font-size: 0.8rem; opacity: 0.7;">KNX Sentinel 2</span>
+    </div>
+
+    <h1>Bus Monitor</h1>
+
+    <div id="log-container">
+        <table id="log-table">
+            <thead>
+                <tr>
+                    <th style="width: 150px;">Time</th>
+                    <th style="width: 80px;">Dir</th>
+                    <th style="width: 100px;">Source</th>
+                    <th style="width: 100px;">Dest</th>
+                    <th style="width: 150px;">Type</th>
+                    <th>Payload</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Logs will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const tableBody = document.querySelector('#log-table tbody');
+        const wsStatus = document.getElementById('ws-status');
+        const MAX_ROWS = 1000;
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/telegrams`;
+            const socket = new WebSocket(wsUrl);
+
+            socket.onopen = () => {
+                wsStatus.className = 'status-indicator connected';
+                console.log('Connected to WebSocket');
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                addLogEntry(data);
+            };
+
+            socket.onclose = () => {
+                wsStatus.className = 'status-indicator disconnected';
+                console.log('WebSocket disconnected. Reconnecting in 2s...');
+                setTimeout(connectWebSocket, 2000);
+            };
+
+            socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                socket.close();
+            };
+        }
+
+        function addLogEntry(data) {
+            const row = document.createElement('tr');
+            
+            // Format timestamp (simple time)
+            const time = new Date(data.timestamp).toLocaleTimeString();
+            const directionClass = data.direction === 'Incoming' ? 'direction-in' : 'direction-out';
+
+            row.innerHTML = `
+                <td>${time}</td>
+                <td class="${directionClass}">${data.direction || '-'}</td>
+                <td>${data.source}</td>
+                <td>${data.destination}</td>
+                <td>${data.type}</td>
+                <td class="payload">${data.payload || ''}</td>
+            `;
+
+            // Insert at the top
+            tableBody.insertBefore(row, tableBody.firstChild);
+
+            // Limit rows
+            if (tableBody.children.length > MAX_ROWS) {
+                tableBody.removeChild(tableBody.lastChild);
+            }
+        }
+
+        // Fetch logs on load
+        async function fetchHistory() {
+            try {
+                const response = await fetch('/api/history');
+                const history = await response.json();
+                // History is newest first, so we iterate backwards to append in correct order if we were appending
+                // But addLogEntry prepends, so we iterate backwards (oldest to newest) 
+                // Wait, history from backend is deque, usually standard iteration is oldest to newest?
+                // Actually monitor.py does appendleft, so list(deque) returns [newest, ..., oldest].
+                // So if we iterate [newest, ..., oldest] and use addLogEntry (prepend), 
+                // Newest will be at bottom. We want newest at top.
+                // So we should iterate in reverse: [oldest, ..., newest] -> prepend -> newest ends up at top.
+                
+                for (let i = history.length - 1; i >= 0; i--) {
+                    addLogEntry(history[i]);
+                }
+            } catch (e) {
+                console.error("Failed to fetch history:", e);
+            }
+        }
+
+        // Initialize
+        fetchHistory();
+        connectWebSocket();
+    </script>
+</body>
+</html>
